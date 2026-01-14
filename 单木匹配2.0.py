@@ -30,9 +30,12 @@ def save_config(config):
         pass
 
 class SeedCleaner:
-    def __init__(self, ax, x, y, h=None):
+    def __init__(self, ax, x, y, h=None, measured_col=None, mh=None):
         self.ax = ax
         self.collection = ax.scatter(x, y, c='blue', alpha=0.6, s=20, label='可删除点 (分割点)', picker=True)
+        self.measured_col = measured_col
+        self.mh = mh
+        
         self.x = x
         self.y = y
         self.h = h
@@ -49,26 +52,47 @@ class SeedCleaner:
 
     def hover(self, event):
         if event.inaxes == self.ax:
+            # 1. 检查分割点 (优先)
             cont, ind = self.collection.contains(event)
             if cont:
-                self.update_annot(ind)
+                self.update_annot(ind, is_measured=False)
                 self.annot.set_visible(True)
                 self.ax.figure.canvas.draw_idle()
-            else:
-                if self.annot.get_visible():
-                    self.annot.set_visible(False)
-                    self.ax.figure.canvas.draw_idle()
+                return
 
-    def update_annot(self, ind):
-        idx = ind['ind'][0]
-        pos = self.collection.get_offsets()[idx]
-        self.annot.xy = pos
-        if self.h is not None:
-             text = f"树高: {self.h[idx]:.2f}m"
+            # 2. 检查实测点
+            if self.measured_col:
+                cont_m, ind_m = self.measured_col.contains(event)
+                if cont_m:
+                    self.update_annot(ind_m, is_measured=True)
+                    self.annot.set_visible(True)
+                    self.ax.figure.canvas.draw_idle()
+                    return
+
+            # 离开任何点
+            if self.annot.get_visible():
+                self.annot.set_visible(False)
+                self.ax.figure.canvas.draw_idle()
+
+    def update_annot(self, ind, is_measured=False):
+        if is_measured:
+            idx = ind['ind'][0]
+            pos = self.measured_col.get_offsets()[idx]
+            self.annot.xy = pos
+            h_val = self.mh[idx] if self.mh is not None else 0
+            text = f"实测点\n树高: {h_val:.2f}m"
+            self.annot.set_text(text)
+            self.annot.get_bbox_patch().set_facecolor('#ccffcc') # 浅绿色背景
         else:
-             text = f"Idx: {idx}"
-        self.annot.set_text(text)
-        self.annot.get_bbox_patch().set_alpha(0.9)
+            idx = ind['ind'][0]
+            pos = self.collection.get_offsets()[idx]
+            self.annot.xy = pos
+            if self.h is not None:
+                 text = f"分割点\n树高: {self.h[idx]:.2f}m"
+            else:
+                 text = f"Idx: {idx}"
+            self.annot.set_text(text)
+            self.annot.get_bbox_patch().set_facecolor('white')
 
     def onselect(self, verts):
         path = Path(verts)
@@ -161,13 +185,19 @@ class TreeMatcher:
         
         fig, ax = plt.subplots(figsize=(10, 10))
         
+        measured_collection = None
+        MH = None
+        
         # 绘制实测点作为参考 (不可选)
         if df_measured is not None:
              mx = df_measured[map_measured['X']].values
              my = df_measured[map_measured['Y']].values
-             ax.scatter(mx, my, c='green', marker='^', s=40, label='参考：实测点 (安全)', alpha=0.4)
+             mh = df_measured[map_measured['H']].values
+             # 启用 picker=True 以支持悬停检测
+             measured_collection = ax.scatter(mx, my, c='green', marker='^', s=40, label='参考：实测点 (安全)', alpha=0.4, picker=True)
+             MH = mh
         
-        cleaner = SeedCleaner(ax, X, Y, H)
+        cleaner = SeedCleaner(ax, X, Y, H, measured_collection, MH)
         ax.legend(loc='upper right')
         ax.grid(True, linestyle='--', alpha=0.3)
         ax.set_xlabel("X Coordinate")
