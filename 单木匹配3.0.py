@@ -31,7 +31,7 @@ def save_config(config):
         pass
 
 class SeedCleaner:
-    def __init__(self, ax, x, y, h=None, measured_col=None, mh=None, mx=None, my=None):
+    def __init__(self, ax, x, y, h=无, measured_col=无, mh=无, mx=无, my=None):
         self.ax = ax
         self.collection = ax.scatter(x, y, c='blue', alpha=0.6, s=20, label='可删除点 (分割点)', picker=True)
         self.measured_col = measured_col
@@ -45,14 +45,14 @@ class SeedCleaner:
         self.indices_to_remove = set()
         self.deleted_collection = None
         self.lasso = LassoSelector(ax, self.onselect)
-        self.ax.set_title("【交互式清理】左键圈选删除/恢复 (变红即删除) | 右键点击显示潜在匹配", fontsize=12, color='red')
+        self.ax。set_title("【交互式清理】左键圈选删除/恢复 (变红即删除) | 右键点击显示潜在匹配", fontsize=12, color='red')
         
         self.annot = ax.annotate("", xy=(0,0), xytext=(15,15), textcoords="offset points",
                                 bbox=dict(boxstyle="round", fc="w", alpha=0.9),
                                 arrowprops=dict(arrowstyle="->"))
-        self.annot.set_visible(False)
-        self.ax.figure.canvas.mpl_connect("motion_notify_event", self.hover)
-        self.ax.figure.canvas.mpl_connect("button_press_event", self.on_click)
+        self.annot。set_visible(False)
+        self.ax。figure.canvas.mpl_connect("motion_notify_event", self.hover)
+        self.ax。figure.canvas.mpl_connect("button_press_event", self.on_click)
         self.temp_lines = []
 
     def on_click(self, event):
