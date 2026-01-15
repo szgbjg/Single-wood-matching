@@ -883,6 +883,14 @@ def main():
             filter_dist = 3.0
             
         df2 = matcher.interactive_clean(df2, map2, df1, map1, auto_filter_dist=filter_dist)
+        
+        # 保存清理后的分割点数据
+        try:
+            cleaned_path2 = os.path.splitext(path2)[0] + "_cleaned.csv"
+            df2.to_csv(cleaned_path2, index=False, encoding='utf-8-sig')
+            print(f"    [保存] 清理后的分割点数据已保存至: {cleaned_path2}")
+        except Exception as e:
+            print(f"    [警告] 无法保存清理后的数据: {e}")
 
     # 7. 设置输出路径
     default_out = os.path.join(os.path.dirname(path1), "匹配结果_output.csv")
